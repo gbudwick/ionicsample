@@ -24,7 +24,6 @@ export class AppComponent {
     this.platform.ready().then(async () => {
       const loading = await this.loadingCtrl.create();
       //await loading.present();
-      await Preferences.set({ key: DB_SETUP_KEY, value: '0' });
       await this.databaseService.init();
       this.databaseService.dbReady.subscribe(isReady => {
         if (isReady) {
