@@ -50,7 +50,7 @@ export class DatabaseService {
     try{
       const dbSetupDone = await Preferences.get({ key: DB_SETUP_KEY });
       
-     if (!dbSetupDone.value) {
+     if (true) {
         this.downloadDatabase();
       } else {
         this.dbName = (await Preferences.get({ key: DB_NAME_KEY })).value;
@@ -72,57 +72,36 @@ export class DatabaseService {
   // Potentially build this out to an update logic:
   // Sync your data on every app start and update the device DB
   private async downloadDatabase(update = false) {
-    this.http.get('https://devdactic.fra1.digitaloceanspaces.com/tutorial/db.json').subscribe(async (jsonExport: JsonSQLite) => {
-      const jsonstring = JSON.stringify(jsonExport);
+    this.http.get('https://costaapiwebdemo.azurewebsites.net/datasource').subscribe(async (jsonExport: JsonSQLite) => {
+    //https://devdactic.fra1.digitaloceanspaces.com/tutorial/db.json'  
+    const jsonstring = JSON.stringify(jsonExport);
+    console.log("**** json", jsonstring);
       const isValid = await this.sqlite.isJsonValid( jsonstring );
       console.log("**** download db");
-      if (true) {
+      if (isValid) {
         try {
           this.dbName = jsonExport.database;
+         // await this.sqlite.deleteOldDatabases();
           await Preferences.set({ key: DB_NAME_KEY, value: this.dbName });
           await this.sqlite.importFromJson( jsonstring );
           console.log("**** import");
           await Preferences.set({ key: DB_SETUP_KEY, value: '1' });
 
           console.log('DB LIST', (await this.sqlite.getDatabaseList()).values);
-    const dbConnection = await this.sqlite.openDB('product-db', DB_VERSION);
-    const x = await dbConnection.query(`
-      SELECT
-          name
-      FROM
-          sqlite_schema
-      WHERE
-          type ='table' AND
-          name NOT LIKE 'sqlite_%';
-    `);
-
-    console.log('TABLE LIST', x);
-      }
-      catch(e)
-      {
-        const alert = await this.alertCtrl.create({
-          header: 'is valid',
-        message: e.message,
-         buttons: ['OK']
-        });
-        await alert.present();
-      }
-        
-        // Your potential logic to detect offline changes later
-        // if (!update) {
-        //   const alert = await this.alertCtrl.create({
-        //     header: 'update',
-        //    message: 'This app can\'t work without Database access. ',
-        //    buttons: ['OK']
-        //   });
-        //   await alert.present();
-        //   await CapacitorSQLite.createSyncTable({database: this.dbName});
-        // } else {
-        //   await CapacitorSQLite.setSyncDate({ syncdate: '' + new Date().getTime() })
-        // }
+        }
+        catch(e)
+        {
+          const alert = await this.alertCtrl.create({
+            header: 'is valid',
+          message: e.message,
+          buttons: ['OK']
+          });
+          await alert.present();
+        }
         this.dbReady.next(true);
       }
       else{
+        console.log("json", jsonstring);
         const alert = await this.alertCtrl.create({
           header: 'not valid json',
          message: 'This app can\'t work without Database access. ',
@@ -133,24 +112,6 @@ export class DatabaseService {
     });
   }
 
-  // async getProductList() {
-  //   console.log("**** get products");
-  //   return this.dbReady.pipe(
-  //     switchMap(async isReady => {
-  //       if (!isReady) {
-  //         return of({ values: [] });
-  //       } else {
-  //         const dbConnection = await this.sqlite.openDB('product-db', DB_VERSION);
-  //         const statement = 'SELECT * FROM products;';
-  //         const x = dbConnection.query(statement);
-  //         const values = []
-  //         var result =  dbConnection.query( statement, values );
-  //         return (await result).values;
-  //       }
-  //     })
-  //   )
-  // }
-
   async getProductList() {
     console.log("**** get products");
           const dbConnection = await this.sqlite.openDB('product-db', DB_VERSION);
@@ -159,14 +120,6 @@ export class DatabaseService {
           var result = await dbConnection.query( statement, values );
           console.log("product list: ", result.values);
           return result.values;
-  }
-
-  async getProductList2() {
-    
-          const statement = 'SELECT * FROM products;';
-          const dbConnection = await this.sqlite.openDB('product-db', DB_VERSION);
-          const x = await dbConnection.query(statement);
-          return from(dbConnection.query( statement ));
   }
   
   async getProductById(id) {

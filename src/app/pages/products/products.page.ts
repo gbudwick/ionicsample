@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { DatabaseService } from '../../services/database.service';
-
+// costamgr  Yqw2gmb!!
 @Component({
   selector: 'app-products',
   templateUrl: 'products.page.html',
@@ -16,11 +16,10 @@ export class ProductsPage {
   }
 
   async loadProducts() {
-    console.log("products:", (await this.databaseService.getProductList()).values());
-    const p = (await this.databaseService.getProductList()).values();
+    const productList = (await this.databaseService.getProductList()).values();
 
-    for (const value of p) {
-      this.products.push(value);
+    for (const p of productList) {
+      this.products.push(p);
     }
   }
 
