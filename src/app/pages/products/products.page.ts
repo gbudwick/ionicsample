@@ -15,10 +15,13 @@ export class ProductsPage {
     this.loadProducts();
   }
 
-  loadProducts() {
-    this.databaseService.getProductList().subscribe(res => {
-      this.products = res.values;
-    });
+  async loadProducts() {
+    console.log("products:", (await this.databaseService.getProductList()).values());
+    const p = (await this.databaseService.getProductList()).values();
+
+    for (const value of p) {
+      this.products.push(value);
+    }
   }
 
   // Mode is either "partial" or "full"

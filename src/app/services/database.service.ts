@@ -6,10 +6,11 @@ import { switchMap } from 'rxjs/operators';
 import { Preferences } from '@capacitor/preferences';
 import { JsonSQLite, CapacitorSQLite } from '@capacitor-community/sqlite';
 import { Device } from '@capacitor/device';
-
+import { SqliteOfficialService } from './sqlite-official.service';
 
 const DB_SETUP_KEY = 'first_db_setup';
 const DB_NAME_KEY = 'db_name';
+const DB_VERSION = 1;
 
 @Injectable({
   providedIn: 'root'
@@ -18,27 +19,28 @@ export class DatabaseService {
   dbReady = new BehaviorSubject(false);
   dbName = '';
 
-  constructor(private http: HttpClient, private alertCtrl: AlertController) { }
+  constructor(private http: HttpClient, private alertCtrl: AlertController,
+    private sqlite: SqliteOfficialService) { }
 
   async init(): Promise<void> {
     const info = await Device.getInfo();
     //if (info.platform === 'android') {
-     
-
-      try {
+      console.log("**** init");
+      this.setupDatabase();
+      // try {
         
-        var db = (await Preferences.get({ key: DB_NAME_KEY })).value;
-        const sqlite = CapacitorSQLite as any;
-        await sqlite.requestPermissions();
-        await this.setupDatabase();
-      } catch (e) {
-        const alert = await this.alertCtrl.create({
-          header: 'No DB access',
-         message: 'This app can\'t work without Database access. ' + e.message,
-         buttons: ['OK']
-        });
-        await alert.present();
-      }
+      //   var db = (await Preferences.get({ key: DB_NAME_KEY })).value;
+      //   const sqlite = CapacitorSQLite as any;
+      //   await sqlite.requestPermissions();
+      //   await this.setupDatabase();
+      // } catch (e) {
+      //   const alert = await this.alertCtrl.create({
+      //     header: 'No DB access',
+      //    message: 'This app can\'t work without Database access. ' + e.message,
+      //    buttons: ['OK']
+      //   });
+      //   await alert.present();
+      // }
    // } else {
      // this.setupDatabase();
   //  }
@@ -52,7 +54,7 @@ export class DatabaseService {
         this.downloadDatabase();
       } else {
         this.dbName = (await Preferences.get({ key: DB_NAME_KEY })).value;
-        await CapacitorSQLite.open({ database: 'product-db' });
+        await await this.sqlite.openDB('product-db', DB_VERSION);
         this.dbReady.next(true);
      }
     }
@@ -72,26 +74,52 @@ export class DatabaseService {
   private async downloadDatabase(update = false) {
     this.http.get('https://devdactic.fra1.digitaloceanspaces.com/tutorial/db.json').subscribe(async (jsonExport: JsonSQLite) => {
       const jsonstring = JSON.stringify(jsonExport);
-      const isValid = await CapacitorSQLite.isJsonValid({ jsonstring });
-      
+      const isValid = await this.sqlite.isJsonValid( jsonstring );
+      console.log("**** download db");
       if (true) {
-        this.dbName = jsonExport.database;
-        await Preferences.set({ key: DB_NAME_KEY, value: this.dbName });
-        await CapacitorSQLite.importFromJson({ jsonstring });
-        await Preferences.set({ key: DB_SETUP_KEY, value: '1' });
+        try {
+          this.dbName = jsonExport.database;
+          await Preferences.set({ key: DB_NAME_KEY, value: this.dbName });
+          await this.sqlite.importFromJson( jsonstring );
+          console.log("**** import");
+          await Preferences.set({ key: DB_SETUP_KEY, value: '1' });
 
+          console.log('DB LIST', (await this.sqlite.getDatabaseList()).values);
+    const dbConnection = await this.sqlite.openDB('product-db', DB_VERSION);
+    const x = await dbConnection.query(`
+      SELECT
+          name
+      FROM
+          sqlite_schema
+      WHERE
+          type ='table' AND
+          name NOT LIKE 'sqlite_%';
+    `);
+
+    console.log('TABLE LIST', x);
+      }
+      catch(e)
+      {
+        const alert = await this.alertCtrl.create({
+          header: 'is valid',
+        message: e.message,
+         buttons: ['OK']
+        });
+        await alert.present();
+      }
+        
         // Your potential logic to detect offline changes later
-        if (!update) {
-          const alert = await this.alertCtrl.create({
-            header: 'update',
-           message: 'This app can\'t work without Database access. ',
-           buttons: ['OK']
-          });
-          await alert.present();
-          await CapacitorSQLite.createSyncTable({ database: this.dbName});
-        } else {
-          await CapacitorSQLite.setSyncDate({ syncdate: '' + new Date().getTime() })
-        }
+        // if (!update) {
+        //   const alert = await this.alertCtrl.create({
+        //     header: 'update',
+        //    message: 'This app can\'t work without Database access. ',
+        //    buttons: ['OK']
+        //   });
+        //   await alert.present();
+        //   await CapacitorSQLite.createSyncTable({database: this.dbName});
+        // } else {
+        //   await CapacitorSQLite.setSyncDate({ syncdate: '' + new Date().getTime() })
+        // }
         this.dbReady.next(true);
       }
       else{
@@ -105,21 +133,44 @@ export class DatabaseService {
     });
   }
 
-  getProductList() {
-    return this.dbReady.pipe(
-      switchMap(isReady => {
-        if (!isReady) {
-          return of({ values: [] });
-        } else {
+  // async getProductList() {
+  //   console.log("**** get products");
+  //   return this.dbReady.pipe(
+  //     switchMap(async isReady => {
+  //       if (!isReady) {
+  //         return of({ values: [] });
+  //       } else {
+  //         const dbConnection = await this.sqlite.openDB('product-db', DB_VERSION);
+  //         const statement = 'SELECT * FROM products;';
+  //         const x = dbConnection.query(statement);
+  //         const values = []
+  //         var result =  dbConnection.query( statement, values );
+  //         return (await result).values;
+  //       }
+  //     })
+  //   )
+  // }
+
+  async getProductList() {
+    console.log("**** get products");
+          const dbConnection = await this.sqlite.openDB('product-db', DB_VERSION);
           const statement = 'SELECT * FROM products;';
-          return from(CapacitorSQLite.query({ statement, values: [] }));
-        }
-      })
-    )
+          const values = []
+          var result = await dbConnection.query( statement, values );
+          console.log("product list: ", result.values);
+          return result.values;
+  }
+
+  async getProductList2() {
+    
+          const statement = 'SELECT * FROM products;';
+          const dbConnection = await this.sqlite.openDB('product-db', DB_VERSION);
+          const x = await dbConnection.query(statement);
+          return from(dbConnection.query( statement ));
   }
   
   async getProductById(id) {
-    const statement = `SELECT * FROM products LEFT JOIN vendors ON vendors.id=products.vendorid WHERE products.id=${id} ;`;
+    const statement = `SELECT * FROM products LEFT JOIN vendors ON vendors.id=products.vendorid WHERE products.id=${id}`;
     return (await CapacitorSQLite.query({ statement, values: [] })).values[0];
   }
   
