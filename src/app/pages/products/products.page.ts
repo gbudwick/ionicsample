@@ -15,9 +15,14 @@ export class ProductsPage {
     this.loadProducts();
   }
 
+  ionViewDidEnter()
+  {
+    this.loadProducts();
+  } 
+
   async loadProducts() {
     const productList = (await this.databaseService.getProductList()).values();
-
+    this.products =  [];
     for (const p of productList) {
       this.products.push(p);
     }
@@ -25,8 +30,7 @@ export class ProductsPage {
 
   // Mode is either "partial" or "full"
   async createExport(mode) {
-    const dataExport = await this.databaseService.getDatabaseExport(mode);
-    this.export = dataExport.export;
+    await this.databaseService.ExportDb();
   }
 
   async addProduct() {

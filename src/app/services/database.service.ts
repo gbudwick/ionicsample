@@ -1,12 +1,14 @@
 import { Injectable } from '@angular/core';
 import { AlertController } from '@ionic/angular';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { BehaviorSubject, from, of } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 import { Preferences } from '@capacitor/preferences';
 import { JsonSQLite, CapacitorSQLite } from '@capacitor-community/sqlite';
 import { Device } from '@capacitor/device';
 import { SqliteOfficialService } from './sqlite-official.service';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 const DB_SETUP_KEY = 'first_db_setup';
 const DB_NAME_KEY = 'db_name';
@@ -69,12 +71,35 @@ export class DatabaseService {
     
   }
 
+  async ExportDb() {
+    const dbConnection = await this.sqlite.openDB('product-db', DB_VERSION);
+
+    const json = await dbConnection.exportToJson('partial');
+
+    var j = {"body": JSON.stringify(json)};
+    var headers = new HttpHeaders();
+    headers.append("Accept", 'application/json');
+    headers.append('Content-Type', 'application/json' );
+    //const requestOptions = new RequestOptions({ headers: headers });
+    this.http.post<any>('https://costaapiwebdemo.azurewebsites.net/datasource/', json).subscribe({
+      next: data => {
+      },
+      error: error => {
+          console.error('There was an error!', error);
+      }
+  })
+    
+    console.log('JSON', JSON.stringify(j));
+    
+  }
+
   // Potentially build this out to an update logic:
   // Sync your data on every app start and update the device DB
   private async downloadDatabase(update = false) {
     this.http.get('https://costaapiwebdemo.azurewebsites.net/datasource').subscribe(async (jsonExport: JsonSQLite) => {
     //https://devdactic.fra1.digitaloceanspaces.com/tutorial/db.json'  
     const jsonstring = JSON.stringify(jsonExport);
+    this.sqlite.dropDatabase("/data/data/io.ionic.starter/databases/product-dbSQLite.db");
     console.log("**** json", jsonstring);
       const isValid = await this.sqlite.isJsonValid( jsonstring );
       console.log("**** download db");
@@ -118,18 +143,30 @@ export class DatabaseService {
           const statement = 'SELECT * FROM products;';
           const values = []
           var result = await dbConnection.query( statement, values );
+          dbConnection.close();
           console.log("product list: ", result.values);
           return result.values;
   }
   
   async getProductById(id) {
-    const statement = `SELECT * FROM products LEFT JOIN vendors ON vendors.id=products.vendorid WHERE products.id=${id}`;
-    return (await CapacitorSQLite.query({ statement, values: [] })).values[0];
+    const statement = "SELECT * FROM products  WHERE products.id=" + id;
+    const dbConnection = await this.sqlite.openDB('product-db', DB_VERSION);
+    const values = []
+    var result = await dbConnection.query( statement, values );
+    dbConnection.close();
+    return result.values[0];
+  }
+
+  async updateProduct(name, id){
+    const dbConnection = await this.sqlite.openDB('product-db', DB_VERSION);
+    const statement = "UPDATE products set name = '" + name + "' where id = " + id;
+    await dbConnection.execute( statement );
+    dbConnection.close();
   }
   
-  getDatabaseExport(mode) {
-    return CapacitorSQLite.exportToJson({ jsonexportmode: mode });
-  }
+  // getDatabaseExport(mode) {
+  //   return this.sqlite.ex({ jsonexportmode: mode });
+  // }
   
   addDummyProduct(name) {
     const randomValue = Math.floor(Math.random() * 100) + 1;
@@ -145,8 +182,9 @@ export class DatabaseService {
   
   // For testing only..
   async deleteDatabase() {
+    const dbConnection = await this.sqlite.openDB('product-db', DB_VERSION);
     const dbName = await Preferences.get({ key: DB_NAME_KEY });
     await Preferences.set({ key: DB_SETUP_KEY, value: null });
-    return CapacitorSQLite.deleteDatabase({ database: dbName.value });
+    return this.sqlite.deleteOldDatabases();
   }
 }

@@ -7,10 +7,6 @@
 </ion-header>
 
 <ion-content>
-
-  <ion-item>
-    <ion-input [(ngModel)]="newProduct"></ion-input>
-  </ion-item>
   <ion-button expand="full" (click)="addProduct()">Add dummy product</ion-button>
 
   <ion-list>
@@ -31,8 +27,7 @@
   </ion-list>
 
   <ion-button expand="full" (click)="createExport('full')">Create Full JSON Export</ion-button>
-  <ion-button expand="full" (click)="createExport('partial')">Create Partial JSON Export</ion-button>
-  <ion-button expand="full" (click)="deleteDatabase()" color="danger">Delete Database</ion-button>
+  <ion-button expand="full" (click)="loadProducts()" color="danger">Refresh</ion-button>
 
   <ion-card *ngIf="export">
     <ion-card-content>

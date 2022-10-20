@@ -1,9 +1,25 @@
 <ion-header>
-  <ion-toolbar>
-    <ion-title>product-details</ion-title>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Product</ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content>
-
+  <form novalidate>
+  <ion-card *ngIf="product">
+    <ion-card-header>
+      <ion-card-title>{{ product.name }}</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-item>
+        <ion-label>Product Name:</ion-label>
+        <ion-input name="name" [(ngModel)]="product.name"></ion-input>
+      </ion-item>
+    </ion-card-content>
+  </ion-card>
+  <ion-button type="submit" (click)="saveProduct()">Save</ion-button>
+  </form>
 </ion-content>
