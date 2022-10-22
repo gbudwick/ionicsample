@@ -1,25 +1,50 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { subscribeOn } from 'rxjs/operators';
 import { DatabaseService } from '../../services/database.service';
+import { PluginListenerHandle } from '@capacitor/core';
+import { Network } from '@capacitor/network';
 // costamgr  Yqw2gmb!!
 @Component({
   selector: 'app-products',
   templateUrl: 'products.page.html',
   styleUrls: ['products.page.scss'],
 })
-export class ProductsPage {
+export class ProductsPage implements OnInit, OnDestroy  {
   products = [];
   export = null;
   newProduct = 'My cool product';
+  networkStatus: any;
+  networkListener: PluginListenerHandle;
 
   constructor(private databaseService: DatabaseService) {
     this.loadProducts();
   }
 
-  ionViewDidEnter()
-  {
-    this.loadProducts();
-  } 
+  ngOnInit() {
+    this.networkListener = Network.addListener('networkStatusChange', (status) => {
+      this.networkStatus = status;
+      console.log('Network status changed', status);
+    });
+  }
+
+  async getNetWorkStatus() {
+    this.networkStatus = await Network.getStatus();
+    console.log("*** network: " + this.networkStatus);
+  }
+
+  endNetworkListener() {
+    if (this.networkListener) {
+      this.networkListener.remove();
+    }
+  }
+
+  ngOnDestroy() {
+    if (this.networkListener) {
+      this.networkListener.remove();
+    }
+  }
+
+  
 
   async loadProducts() {
     const productList = (await this.databaseService.getProductList()).values();

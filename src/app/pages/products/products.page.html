@@ -29,7 +29,23 @@
   <ion-button expand="full" (click)="createExport('full')">Create Full JSON Export</ion-button>
   <ion-button expand="full" (click)="importProducts()">Import Products</ion-button>
   <ion-button expand="full" (click)="loadProducts()" color="danger">Refresh</ion-button>
-
+  <ion-card>
+    <ion-card-header>
+      <h2>
+        Network connection:
+        <ion-icon size="large" name="wifi" color="primary"></ion-icon><br/>
+        {{ networkStatus | json }}
+      </h2>
+    </ion-card-header>
+    <ion-card-content class="ion-float-right">
+      <ion-button size="small" (click)="getNetWorkStatus()">
+       Get network status
+      </ion-button>
+      <ion-button size="small" color="danger" (click)="endNetworkListener()">
+          End network listener
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
   <ion-card *ngIf="export">
     <ion-card-content>
       {{ export | json}}
