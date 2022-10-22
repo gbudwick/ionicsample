@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { subscribeOn } from 'rxjs/operators';
 import { DatabaseService } from '../../services/database.service';
 // costamgr  Yqw2gmb!!
 @Component({
@@ -31,6 +32,15 @@ export class ProductsPage {
   // Mode is either "partial" or "full"
   async createExport(mode) {
     await this.databaseService.ExportDb();
+  }
+
+  async importProducts()
+  {
+    this.databaseService.deleteProducts();
+    this.databaseService.importProducts().then( () => {
+      this.loadProducts();
+      console.log("** imported products")
+    }); 
   }
 
   async addProduct() {

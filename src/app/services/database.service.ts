@@ -1,18 +1,27 @@
 import { Injectable } from '@angular/core';
 import { AlertController } from '@ionic/angular';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { BehaviorSubject, from, of } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { BehaviorSubject, from, Observable, of } from 'rxjs';
 import { Preferences } from '@capacitor/preferences';
 import { JsonSQLite, CapacitorSQLite } from '@capacitor-community/sqlite';
 import { Device } from '@capacitor/device';
 import { SqliteOfficialService } from './sqlite-official.service';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 
 const DB_SETUP_KEY = 'first_db_setup';
 const DB_NAME_KEY = 'db_name';
 const DB_VERSION = 1;
+
+export interface Product {
+  id: number;
+  name: string | null;
+  currency: string | null;
+  price: number;
+  vendorId: number;
+}
+
+interface ImportedProducts {
+  products: Product[];
+}
 
 @Injectable({
   providedIn: 'root'
@@ -186,5 +195,34 @@ export class DatabaseService {
     const dbName = await Preferences.get({ key: DB_NAME_KEY });
     await Preferences.set({ key: DB_SETUP_KEY, value: null });
     return this.sqlite.deleteOldDatabases();
+  }
+
+  importProducts(): Promise<void> {
+    console.log("*** start import");
+    return new Promise((resolve, reject )=> {
+      this.http.get<ImportedProducts>('https://costaapiwebdemo.azurewebsites.net/datasource/getproducts').subscribe(async (imported: ImportedProducts) => {
+        for( var i=0; i<imported.products.length; i++)
+          {
+            var p = imported.products[i];
+            var statement = "INSERT INTO products ( name, currency, value) VALUES (";
+            statement += "'" + p.name + "', ";
+            statement += "'" + p.currency + "', ";
+            statement += p.price + ")";
+            const dbConnection = await this.sqlite.openDB('product-db', DB_VERSION); 
+            await dbConnection.execute( statement );
+            await dbConnection.close();
+          }
+      });
+      console.log("*** finished import");
+      resolve();  
+    });
+  }
+
+  async deleteProducts()
+  {
+    const dbConnection = await this.sqlite.openDB('product-db', DB_VERSION);
+    const statement = "delete from products";
+    await dbConnection.execute(statement);
+    await dbConnection.close();
   }
 }

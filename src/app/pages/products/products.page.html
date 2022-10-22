@@ -27,6 +27,7 @@
   </ion-list>
 
   <ion-button expand="full" (click)="createExport('full')">Create Full JSON Export</ion-button>
+  <ion-button expand="full" (click)="importProducts()">Import Products</ion-button>
   <ion-button expand="full" (click)="loadProducts()" color="danger">Refresh</ion-button>
 
   <ion-card *ngIf="export">
