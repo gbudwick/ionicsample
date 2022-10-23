@@ -167,10 +167,13 @@ export class DatabaseService {
   }
 
   async updateProduct(name, id){
-    const dbConnection = await this.sqlite.openDB('product-db', DB_VERSION);
-    const statement = "UPDATE products set name = '" + name + "' where id = " + id;
-    await dbConnection.execute( statement );
-    dbConnection.close();
+    return new Promise<void>(async ( resolve, reject) => {
+      const dbConnection = await this.sqlite.openDB('product-db', DB_VERSION);
+      const statement = "UPDATE products set name = '" + name + "' where id = " + id;
+      await dbConnection.execute( statement );
+      dbConnection.close();
+      resolve();
+    });  
   }
   
   // getDatabaseExport(mode) {

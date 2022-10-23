@@ -25,6 +25,11 @@ export class ProductsPage implements OnInit, OnDestroy  {
       this.networkStatus = status;
       console.log('Network status changed', status);
     });
+    this.loadProducts();
+  }
+
+  IonViewDidEnter () {
+    this.loadProducts();
   }
 
   async getNetWorkStatus() {

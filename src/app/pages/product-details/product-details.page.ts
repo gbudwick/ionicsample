@@ -24,8 +24,11 @@ export class DetailsPage implements OnInit {
   async saveProduct()
   {
     console.log(this.product.name);
-    await this.databaseService.updateProduct(this.product.name, this.product.id);
-    this.navController.navigateBack(['/menu/products'])
-  }
 
+    await this.databaseService.updateProduct(this.product.name, this.product.id)
+    .then( () => {
+      this.navController.navigateBack(['/menu/products'])
+    });
+      
+  }
 }
