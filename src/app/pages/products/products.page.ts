@@ -64,6 +64,24 @@ export class ProductsPage implements OnInit, OnDestroy  {
     await this.databaseService.ExportDb();
   }
 
+  async exportProducts() {
+    const productList = (await this.databaseService.getProductList()).values();
+    var exportedProducts =  [];
+    for (const p of productList) {
+      const newProduct = 
+      { name: p.name,
+      currencty: p.currency,
+      value: p.value,
+      vendorId: p.vendorId};
+      this.products.push(p);
+        exportedProducts.push(newProduct)
+    }
+    
+    await this.databaseService.ExportProducts({products: exportedProducts});
+  }
+
+
+
   async importProducts()
   {
     this.databaseService.deleteProducts();

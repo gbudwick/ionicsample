@@ -80,6 +80,21 @@ export class DatabaseService {
     
   }
 
+  async ExportProducts(exportedProducts){
+    var headers = new HttpHeaders();
+    headers.append("Accept", 'application/json');
+    headers.append('Content-Type', 'application/json' );
+    //const requestOptions = new RequestOptions({ headers: headers });
+    this.http.post<any>('https://costaapiwebdemo.azurewebsites.net/datasource/', exportedProducts).subscribe({
+      next: data => {
+        console.log("*** exported products")
+      },
+      error: error => {
+          console.error('There was an error!', error);
+      }
+    });
+  }
+
   async ExportDb() {
     const dbConnection = await this.sqlite.openDB('product-db', DB_VERSION);
 
