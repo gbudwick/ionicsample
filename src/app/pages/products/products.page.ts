@@ -3,6 +3,7 @@ import { subscribeOn } from 'rxjs/operators';
 import { DatabaseService } from '../../services/database.service';
 import { PluginListenerHandle } from '@capacitor/core';
 import { Network } from '@capacitor/network';
+import { throwError } from 'rxjs';
 // costamgr  Yqw2gmb!!
 @Component({
   selector: 'app-products',
@@ -18,6 +19,13 @@ export class ProductsPage implements OnInit, OnDestroy  {
 
   constructor(private databaseService: DatabaseService) {
     this.loadProducts();
+    setInterval(() => {
+      if(this.networkStatus.connected)
+      {
+        this.importProducts();
+      }
+      
+    }, 15000);
   }
 
   ngOnInit() {
@@ -34,7 +42,7 @@ export class ProductsPage implements OnInit, OnDestroy  {
 
   async getNetWorkStatus() {
     this.networkStatus = await Network.getStatus();
-    console.log("*** network: " + this.networkStatus);
+    console.log("*** network: " + JSON.stringify(this.networkStatus));
   }
 
   endNetworkListener() {
@@ -73,8 +81,7 @@ export class ProductsPage implements OnInit, OnDestroy  {
       currencty: p.currency,
       value: p.value,
       vendorId: p.vendorId};
-      this.products.push(p);
-        exportedProducts.push(newProduct)
+      exportedProducts.push(newProduct)
     }
     
     await this.databaseService.ExportProducts({products: exportedProducts});
@@ -88,6 +95,7 @@ export class ProductsPage implements OnInit, OnDestroy  {
     this.databaseService.importProducts().then( () => {
       this.loadProducts();
       console.log("** imported products")
+      this.networkStatus.connected = false;
     }); 
   }
 
